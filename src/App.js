@@ -284,9 +284,9 @@ export default function RoomBookingSystem() {
         </div>
 
         <div className="max-w-7xl mx-auto p-6 space-y-8">
-          {/* Kelola Pengguna */}
+          {/* Profil Pengguna */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"><Users size={24} /> Kelola Pengguna</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"><Users size={24} /> Profil Pengguna</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-6 bg-gray-50 p-4 rounded">
               <input type="text" placeholder="No IC" value={newUserForm.ic} onChange={(e) => setNewUserForm({...newUserForm, ic: e.target.value})} className="px-3 py-2 border rounded text-sm" />
@@ -343,9 +343,9 @@ export default function RoomBookingSystem() {
             </div>
           </div>
 
-          {/* Kelola Bilik */}
+          {/* Profil Bilik */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Kelola Bilik</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Profil Bilik</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <input type="text" placeholder="Nama bilik" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="px-4 py-2 border rounded" />
