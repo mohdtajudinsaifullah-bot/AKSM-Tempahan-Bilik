@@ -96,27 +96,56 @@ export default function RoomBookingSystem() {
     }
   };
 
-  const handleRegister = () => {
-    if (!regForm.ic || !regForm.password || !regForm.name || !regForm.email || !regForm.jabatan) {
-      alert('Sila isi semua medan!');
+  const handleRegister = async () => {
+  // Semak input wajib
+  if (!regForm.ic || !regForm.password || !regForm.name || !regForm.email || !regForm.jabatan) {
+    alert('⚠️ Sila isi semua medan!');
+    return;
+  }
+
+  // Semak password sama
+  if (regForm.password !== regForm.confirmPassword) {
+    alert('❌ Password tidak sepadan!');
+    return;
+  }
+
+  // Semak jika IC dah digunakan
+  if (users.find(u => u.ic === regForm.ic)) {
+    alert('⚠️ No IC sudah terdaftar!');
+    return;
+  }
+
+  // Data user baru
+  const userData = {
+    ic: regForm.ic,
+    password: regForm.password,
+    name: regForm.name,
+    email: regForm.email,
+    jabatan: regForm.jabatan,
+    role: 'user'
+  };
+
+  try {
+    // Masukkan ke Supabase
+    const res = await supabaseCall('POST', 'users', userData);
+
+    if (!res) {
+      alert('❌ Ralat semasa simpan ke Supabase. Sila semak konsol.');
       return;
     }
-    if (regForm.password !== regForm.confirmPassword) {
-      alert('Password tidak sepadan!');
-      return;
-    }
-    if (users.find(u => u.ic === regForm.ic)) {
-      alert('No IC sudah terdaftar!');
-      return;
-    }
-    
-    const userData = { ic: regForm.ic, password: regForm.password, name: regForm.name, email: regForm.email, jabatan: regForm.jabatan, role: 'user' };
-    supabaseCall('POST', 'users', userData);
+
+    // Simpan dalam state tempatan juga
     setUsers([...users, userData]);
-    alert('Pendaftaran berjaya! Sila log masuk.');
+
+    // Reset form & tukar ke login
+    alert('✅ Pendaftaran berjaya! Sila log masuk.');
     setRegForm({ ic: '', password: '', confirmPassword: '', name: '', email: '', jabatan: '' });
     setAuthMode('login');
-  };
+  } catch (error) {
+    console.error('❌ Ralat semasa pendaftaran:', error);
+    alert('❌ Ralat tidak dijangka semasa pendaftaran.');
+  }
+};
 
   const handleLogout = () => setCurrentUser(null);
 
