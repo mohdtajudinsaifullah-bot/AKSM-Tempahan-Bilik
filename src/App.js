@@ -6,17 +6,27 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseCall = async (method, table, data = null, query = '') => {
   const headers = {
-    'Content-Type': 'application/json',
     'apikey': SUPABASE_KEY,
-    'Authorization': `Bearer ${SUPABASE_KEY}`
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=minimal'
   };
 
   let url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
   const options = { method, headers };
-  if (data) options.body = JSON.stringify(data);
+  
+  if (data) {
+    options.body = JSON.stringify(data);
+  }
 
   try {
     const response = await fetch(url, options);
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Supabase error:', response.status, errorData);
+      return null;
+    }
+    if (response.status === 204) return { success: true };
     return await response.json();
   } catch (error) {
     console.error('Supabase error:', error);
@@ -271,21 +281,21 @@ export default function RoomBookingSystem() {
         <div className="relative grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl w-full">
           {/* Left Info */}
           <div className="text-white p-8 flex flex-col justify-center">
-            <h2 className="text-5xl font-bold mb-6">Sistem Tempahan Bilik AKSM</h2>
-            <p className="text-3xl mb-8">Akademi Kehakiman Syariah Malaysia</p>
+            <h2 className="text-3xl font-bold mb-6">Sistem Tempahan Bilik AKSM</h2>
+            <p className="text-xl mb-8">Akademi Kehakiman Syariah Malaysia</p>
             
             <div className="space-y-6">
               <div>
-                <p className="font-bold text-3xl mb-2">📍 Lokasi:</p>
-                <p className="text-xl leading-relaxed">Tingkat 6, Menara PJH, 2, Jalan Tun Abdul Razak, Presint 2, 62000 Putrajaya</p>
+                <p className="font-bold text-xl mb-2">📍 Lokasi:</p>
+                <p className="text-base leading-relaxed">Tingkat 6, Menara PJH, 2, Jalan Tun Abdul Razak, Presint 2, 62000 Putrajaya</p>
               </div>
               <div>
-                <p className="font-bold text-3xl mb-2">📞 No. Telefon:</p>
-                <p className="text-xl">0123456785</p>
+                <p className="font-bold text-xl mb-2">📞 No. Telefon:</p>
+                <p className="text-base">0123456785</p>
               </div>
               <div>
-                <p className="font-bold text-3xl mb-2">📧 Emel:</p>
-                <p className="text-xl">aksm@esyariah.gov.my</p>
+                <p className="font-bold text-xl mb-2">📧 Emel:</p>
+                <p className="text-base">aksm@esyariah.gov.my</p>
               </div>
             </div>
           </div>
@@ -461,9 +471,9 @@ export default function RoomBookingSystem() {
             </div>
           </div>
 
-          {/* Perofil Bilik */}
+          {/* Profil Bilik */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Profile Bilik</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Profil Bilik</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <input type="text" placeholder="Nama bilik" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="px-4 py-2 border rounded" />
