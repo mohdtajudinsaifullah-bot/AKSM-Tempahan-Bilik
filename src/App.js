@@ -9,7 +9,7 @@ const supabaseCall = async (method, table, data = null, query = '') => {
     'apikey': SUPABASE_KEY,
     'Authorization': `Bearer ${SUPABASE_KEY}`,
     'Content-Type': 'application/json',
-    'Prefer': 'return=minimal'
+    'Prefer': 'return=minimal' // maknanya Supabase tak hantar JSON balik
   };
 
   let url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
@@ -21,13 +21,26 @@ const supabaseCall = async (method, table, data = null, query = '') => {
 
   try {
     const response = await fetch(url, options);
+
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Supabase error:', response.status, errorData);
+      const errorText = await response.text();
+      console.error('Supabase error:', response.status, errorText);
       return null;
     }
-    if (response.status === 204) return { success: true };
-    return await response.json();
+
+    // 👇 Tangani semua kemungkinan response
+    if (response.status === 204) return { success: true }; // Tiada isi (delete/update)
+    if (response.status === 201 || response.status === 200) {
+      try {
+        const json = await response.json();
+        return json || { success: true };
+      } catch {
+        // Kalau tiada JSON pun anggap berjaya
+        return { success: true };
+      }
+    }
+
+    return { success: true };
   } catch (error) {
     console.error('Supabase error:', error);
     return null;
