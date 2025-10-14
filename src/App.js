@@ -110,8 +110,9 @@ export default function RoomBookingSystem() {
       return;
     }
     
-    supabaseCall('POST', 'users', { ...regForm, role: 'user' });
-    setUsers([...users, { ...regForm, role: 'user' }]);
+    const userData = { ic: regForm.ic, password: regForm.password, name: regForm.name, email: regForm.email, jabatan: regForm.jabatan, role: 'user' };
+    supabaseCall('POST', 'users', userData);
+    setUsers([...users, userData]);
     alert('Pendaftaran berjaya! Sila log masuk.');
     setRegForm({ ic: '', password: '', confirmPassword: '', name: '', email: '', jabatan: '' });
     setAuthMode('login');
@@ -282,19 +283,19 @@ export default function RoomBookingSystem() {
           {/* Left Info */}
           <div className="text-white p-8 flex flex-col justify-center">
             <h2 className="text-3xl font-bold mb-6">Sistem Tempahan Bilik AKSM</h2>
-            <p className="text-xl mb-8">Akademi Kehakiman Syariah Malaysia</p>
+            <p className="text-lg mb-8">Akademi Kehakiman Syariah Malaysia</p>
             
             <div className="space-y-6">
               <div>
-                <p className="font-bold text-xl mb-2">📍 Lokasi:</p>
+                <p className="font-bold text-lg mb-2">📍 Lokasi:</p>
                 <p className="text-base leading-relaxed">Tingkat 6, Menara PJH, 2, Jalan Tun Abdul Razak, Presint 2, 62000 Putrajaya</p>
               </div>
               <div>
-                <p className="font-bold text-xl mb-2">📞 No. Telefon:</p>
+                <p className="font-bold text-lg mb-2">📞 No. Telefon:</p>
                 <p className="text-base">0123456785</p>
               </div>
               <div>
-                <p className="font-bold text-xl mb-2">📧 Emel:</p>
+                <p className="font-bold text-lg mb-2">📧 Emel:</p>
                 <p className="text-base">aksm@esyariah.gov.my</p>
               </div>
             </div>
@@ -412,7 +413,7 @@ export default function RoomBookingSystem() {
         </div>
 
         <div className="max-w-7xl mx-auto p-6 space-y-8">
-          {/* Profil Pengguna */}
+          {/* Kelola Pengguna */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"><Users size={24} /> Profil Pengguna</h2>
             
@@ -471,9 +472,9 @@ export default function RoomBookingSystem() {
             </div>
           </div>
 
-          {/* Profil Bilik */}
+          {/* Kelola Bilik */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Profil Bilik</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Kelola Bilik</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <input type="text" placeholder="Nama bilik" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="px-4 py-2 border rounded" />
