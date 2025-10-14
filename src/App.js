@@ -210,10 +210,9 @@ export default function RoomBookingSystem() {
   };
 
   const handleCancelBooking = (id) => {
-    if (confirm('Adakah anda pasti ingin membatalkan tempahan ini?')) {
-      setBookings(bookings.map(b => b.id === id ? { ...b, status: 'cancelled' } : b));
-      supabaseCall('PATCH', 'bookings', { status: 'cancelled' }, `?id=eq.${id}`);
-    }
+    setBookings(bookings.map(b => b.id === id ? { ...b, status: 'cancelled' } : b));
+    supabaseCall('PATCH', 'bookings', { status: 'cancelled' }, `?id=eq.${id}`);
+    setConfirmCancel(null);
   };
 
   const handleApproveBooking = (id) => {
@@ -405,7 +404,7 @@ export default function RoomBookingSystem() {
         <div className="max-w-7xl mx-auto p-6 space-y-8">
           {/* Profil Pengguna */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"><Users size={24} /> Profile Pengguna</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"><Users size={24} /> Profil Pengguna</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-6 bg-gray-50 p-4 rounded">
               <input type="text" placeholder="No IC" value={newUserForm.ic} onChange={(e) => setNewUserForm({...newUserForm, ic: e.target.value})} className="px-3 py-2 border rounded text-sm" />
@@ -462,9 +461,9 @@ export default function RoomBookingSystem() {
             </div>
           </div>
 
-          {/* Profil Bilik */}
+          {/* Perofil Bilik */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Profil Bilik</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Profile Bilik</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <input type="text" placeholder="Nama bilik" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="px-4 py-2 border rounded" />
@@ -720,9 +719,22 @@ export default function RoomBookingSystem() {
                       </td>
                       <td className="px-4 py-2 text-center">
                         {(booking.status === 'approved' || booking.status === 'pending') && (
-                          <button onClick={() => handleCancelBooking(booking.id)} className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm">
-                            Batalkan
-                          </button>
+                          <>
+                            {confirmCancel === booking.id ? (
+                              <div className="flex gap-2 justify-center">
+                                <button onClick={() => handleCancelBooking(booking.id)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">
+                                  Ya
+                                </button>
+                                <button onClick={() => setConfirmCancel(null)} className="bg-gray-400 hover:bg-gray-500 text-white px-2 py-1 rounded text-xs">
+                                  Tidak
+                                </button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setConfirmCancel(booking.id)} className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm">
+                                Batalkan
+                              </button>
+                            )}
+                          </>
                         )}
                       </td>
                     </tr>
