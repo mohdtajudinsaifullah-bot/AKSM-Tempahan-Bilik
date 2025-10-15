@@ -280,7 +280,58 @@ export default function RoomBookingSystem() {
     return Math.round(diffHours * 10) / 10; // round to 1 decimal
   };
 
-  const getRoomName = (roomId) => rooms.find(r => r.id === roomId)?.name || 'Unknown';
+  const generateReport = () => {
+    const stats = {
+      total: bookings.length,
+      approved: bookings.filter(b => b.status === 'approved').length,
+      pending: bookings.filter(b => b.status === 'pending').length,
+      rejected: bookings.filter(b => b.status === 'rejected').length,
+      cancelled: bookings.filter(b => b.status === 'cancelled').length
+    };
+    
+    return `
+LAPORAN STATISTIK TEMPAHAN BILIK AKSM
+Akademi Kehakiman Syariah Malaysia
+Tarikh: ${new Date().toLocaleDateString('ms-MY')}
+
+==============================================
+
+RINGKASAN TEMPAHAN:
+- Jumlah Tempahan: ${stats.total}
+- Diluluskan: ${stats.approved}
+- Menunggu Pengesahan: ${stats.pending}
+- Ditolak: ${stats.rejected}
+- Dibatalkan: ${stats.cancelled}
+
+==============================================
+
+SENARAI TEMPAHAN:
+
+${bookings.map((b, i) => `
+${i + 1}. ${getRoomName(b.room_id)}
+   Pengguna: ${b.user_name}
+   Tarikh: ${b.start_date} hingga ${b.end_date}
+   Masa: ${b.start_time}
+   Status: ${b.status === 'approved' ? 'Diluluskan' : b.status === 'pending' ? 'Menunggu' : b.status === 'cancelled' ? 'Dibatalkan' : 'Ditolak'}
+`).join('\n')}
+
+==============================================
+Laporan dijana oleh: ${currentUser.name}
+    `.trim();
+  };
+
+  const downloadReport = (format) => {
+    const report = generateReport();
+    const blob = new Blob([report], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Laporan_Tempahan_${new Date().toISOString().split('T')[0]}.${format === 'word' ? 'doc' : 'txt'}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   // Login page
   if (!currentUser) {
@@ -422,7 +473,7 @@ export default function RoomBookingSystem() {
         </div>
 
         <div className="max-w-7xl mx-auto p-6 space-y-8">
-          {/* Kelola Pengguna */}
+          {/* Profil Pengguna */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"><Users size={24} /> Profil Pengguna</h2>
             
@@ -532,6 +583,34 @@ export default function RoomBookingSystem() {
             </div>
           </div>
 
+          {/* Lulus Tempahan */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Tempahan Menunggu Pengesahan</h2>
+            
+            <div className="space-y-4">
+              {bookings.filter(b => b.status === 'pending').length === 0 ? (
+                <p className="text-gray-600">Tiada tempahan menunggu pengesahan</p>
+              ) : (
+                bookings.filter(b => b.status === 'pending').map(booking => (
+                  <div key={booking.id} className="border rounded-lg p-4 flex justify-between items-center bg-yellow-50">
+                    <div>
+                      <p className="font-semibold">{getRoomName(booking.room_id)}</p>
+                      <p className="text-sm text-gray-600">{booking.user_name} ({booking.user_email}) | {booking.start_date} hingga {booking.end_date} | {booking.start_time}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleApproveBooking(booking.id)} className="flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+                        <Check size={18} /> Lulus
+                      </button>
+                      <button onClick={() => handleRejectBooking(booking.id)} className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+                        <X size={18} /> Tolak
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
           {/* Senarai Tempahan & Statistik */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-800">Senarai Tempahan Bilik</h2>
@@ -548,6 +627,12 @@ export default function RoomBookingSystem() {
                 alert(`📊 STATISTIK TEMPAHAN\n\nJumlah Tempahan: ${stats.total}\n✓ Diluluskan: ${stats.approved}\n⏳ Menunggu: ${stats.pending}\n✕ Ditolak: ${stats.rejected}\n❌ Dibatalkan: ${stats.cancelled}`);
               }} className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded font-semibold">
                 📊 Jana Laporan
+              </button>
+              <button onClick={() => downloadReport('word')} className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold">
+                📄 Export Word
+              </button>
+              <button onClick={() => downloadReport('pdf')} className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold">
+                📕 Export PDF
               </button>
             </div>
 
@@ -597,34 +682,6 @@ export default function RoomBookingSystem() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          {/* Lulus Tempahan */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Tempahan Menunggu Pengesahan</h2>
-            
-            <div className="space-y-4">
-              {bookings.filter(b => b.status === 'pending').length === 0 ? (
-                <p className="text-gray-600">Tiada tempahan menunggu pengesahan</p>
-              ) : (
-                bookings.filter(b => b.status === 'pending').map(booking => (
-                  <div key={booking.id} className="border rounded-lg p-4 flex justify-between items-center bg-yellow-50">
-                    <div>
-                      <p className="font-semibold">{getRoomName(booking.room_id)}</p>
-                      <p className="text-sm text-gray-600">{booking.user_name} ({booking.user_email}) | {booking.start_date} hingga {booking.end_date} | {booking.start_time}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => handleApproveBooking(booking.id)} className="flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
-                        <Check size={18} /> Lulus
-                      </button>
-                      <button onClick={() => handleRejectBooking(booking.id)} className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
-                        <X size={18} /> Tolak
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
             </div>
           </div>
         </div>
