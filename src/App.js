@@ -50,7 +50,7 @@ export default function RoomBookingSystem() {
   
   const [editRoom, setEditRoom] = useState(null);
   const [formData, setFormData] = useState({ name: '', description: '', images: [] });
-  const [bookingDates, setBookingDates] = useState({ startDate: '', endDate: '', startTime: '', duration: 1 });
+  const [bookingDates, setBookingDates] = useState({ startDate: '', endDate: '', startTime: '', endTime: '', purpose: '' });
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [editUser, setEditUser] = useState(null);
   const [editUserForm, setEditUserForm] = useState({ name: '', email: '', jabatan: '', role: 'user' });
