@@ -191,8 +191,8 @@ export default function RoomBookingSystem() {
   };
 
   const handleBookRoom = () => {
-    if (!selectedRoom || !bookingDates.startDate || !bookingDates.endDate || !bookingDates.startTime) {
-      alert('Sila isi semua medan!');
+    if (!selectedRoom || !bookingDates.startDate || !bookingDates.endDate || !bookingDates.startTime || !bookingDates.purpose) {
+      alert('Sila isi semua medan termasuk tujuan tempahan!');
       return;
     }
 
@@ -205,7 +205,9 @@ export default function RoomBookingSystem() {
       start_date: bookingDates.startDate,
       end_date: bookingDates.endDate,
       start_time: bookingDates.startTime,
-      duration: bookingDates.duration,
+      end_time: bookingDates.endTime,
+      duration: calculateDuration(bookingDates.startDate, bookingDates.startTime, bookingDates.endDate, bookingDates.endTime),
+      purpose: bookingDates.purpose,
       status: 'pending',
       created_at: new Date().toISOString()
     };
@@ -213,10 +215,9 @@ export default function RoomBookingSystem() {
     supabaseCall('POST', 'bookings', newBooking);
     setBookings([...bookings, newBooking]);
     alert('Tempahan berjaya dihantar! Admin akan memproses tempahan anda.');
-    setBookingDates({ startDate: '', endDate: '', startTime: '', duration: 1 });
+    setBookingDates({ startDate: '', endDate: '', startTime: '', endTime: '', purpose: '' });
     setSelectedRoom(null);
     
-    // Send email notification (in real app, use backend)
     console.log('Email sent to admin');
   };
 
@@ -645,6 +646,7 @@ Laporan dijana oleh: ${currentUser.name}
                     <th className="px-4 py-2 text-left">Tarikh Mula</th>
                     <th className="px-4 py-2 text-left">Tarikh Tamat</th>
                     <th className="px-4 py-2 text-left">Masa</th>
+                    <th className="px-4 py-2 text-left">Tujuan</th>
                     <th className="px-4 py-2 text-left">Status</th>
                     <th className="px-4 py-2 text-center">Tindakan</th>
                   </tr>
@@ -657,6 +659,7 @@ Laporan dijana oleh: ${currentUser.name}
                       <td className="px-4 py-2">{booking.start_date}</td>
                       <td className="px-4 py-2">{booking.end_date}</td>
                       <td className="px-4 py-2">{booking.start_time}</td>
+                      <td className="px-4 py-2">{booking.purpose || '-'}</td>
                       <td className="px-4 py-2">
                         <span className={`px-3 py-1 rounded font-semibold text-xs ${
                           booking.status === 'approved' ? 'bg-green-200 text-green-800' :
@@ -732,7 +735,7 @@ Laporan dijana oleh: ${currentUser.name}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"><Calendar size={24} /> Pilih Tarikh & Masa</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
             <div>
               <label className="block text-sm font-semibold mb-2">Tarikh Mula</label>
               <input 
@@ -764,7 +767,7 @@ Laporan dijana oleh: ${currentUser.name}
               <label className="block text-sm font-semibold mb-2">Masa Tamat</label>
               <input 
                 type="time" 
-                value={bookingDates.endTime || bookingDates.startTime} 
+                value={bookingDates.endTime} 
                 onChange={(e) => setBookingDates({...bookingDates, endTime: e.target.value})} 
                 className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -772,9 +775,19 @@ Laporan dijana oleh: ${currentUser.name}
             <div>
               <label className="block text-sm font-semibold mb-2">Tempoh</label>
               <div className="px-4 py-2 border rounded bg-gray-50 flex items-center">
-                <span className="font-bold text-lg">{calculateDuration(bookingDates.startDate, bookingDates.startTime, bookingDates.endDate, bookingDates.endTime || bookingDates.startTime)}</span>
-                <span className="text-sm text-gray-600 ml-2">jam</span>
+                <span className="font-bold text-lg">{calculateDuration(bookingDates.startDate, bookingDates.startTime, bookingDates.endDate, bookingDates.endTime)}</span>
+                <span className="text-sm text-gray-600 ml-2">hari</span>
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2">Tujuan</label>
+              <input 
+                type="text" 
+                placeholder="Mesyuarat, Training, dll"
+                value={bookingDates.purpose} 
+                onChange={(e) => setBookingDates({...bookingDates, purpose: e.target.value})} 
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
           </div>
         </div>
@@ -834,6 +847,7 @@ Laporan dijana oleh: ${currentUser.name}
                     <th className="px-4 py-2 text-left">Tarikh Tamat</th>
                     <th className="px-4 py-2 text-left">Masa</th>
                     <th className="px-4 py-2 text-left">Tempoh (Hari)</th>
+                    <th className="px-4 py-2 text-left">Tujuan</th>
                     <th className="px-4 py-2 text-left">Status</th>
                     <th className="px-4 py-2 text-center">Tindakan</th>
                   </tr>
@@ -846,6 +860,7 @@ Laporan dijana oleh: ${currentUser.name}
                       <td className="px-4 py-2">{booking.end_date}</td>
                       <td className="px-4 py-2">{booking.start_time}</td>
                       <td className="px-4 py-2">{booking.duration}</td>
+                      <td className="px-4 py-2">{booking.purpose || '-'}</td>
                       <td className="px-4 py-2">
                         <span className={`px-3 py-1 rounded font-semibold ${
                           booking.status === 'approved' ? 'bg-green-200 text-green-800' :
