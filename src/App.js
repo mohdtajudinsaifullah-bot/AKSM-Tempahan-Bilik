@@ -280,6 +280,8 @@ export default function RoomBookingSystem() {
     return Math.round(diffHours * 10) / 10; // round to 1 decimal
   };
 
+  const getRoomName = (roomId) => rooms.find(r => r.id === roomId)?.name || 'Unknown';
+
   // Login page
   if (!currentUser) {
     return (
