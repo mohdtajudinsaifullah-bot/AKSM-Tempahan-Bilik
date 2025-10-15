@@ -271,7 +271,14 @@ export default function RoomBookingSystem() {
     supabaseCall('DELETE', 'users', null, `?ic=eq.${ic}`);
   };
 
-  const getRoomName = (roomId) => rooms.find(r => r.id === roomId)?.name || 'Unknown';
+  const calculateDuration = (startDate, startTime, endDate, endTime) => {
+    if (!startDate || !startTime || !endDate) return 0;
+    const start = new Date(`${startDate}T${startTime}`);
+    const end = new Date(`${endDate}T${endTime || startTime}`);
+    const diffMs = end - start;
+    const diffHours = diffMs / (1000 * 60 * 60);
+    return Math.round(diffHours * 10) / 10; // round to 1 decimal
+  };
 
   // Login page
   if (!currentUser) {
@@ -523,6 +530,74 @@ export default function RoomBookingSystem() {
             </div>
           </div>
 
+          {/* Senarai Tempahan & Statistik */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Senarai Tempahan Bilik</h2>
+            
+            <div className="mb-6 flex gap-3">
+              <button onClick={() => {
+                const stats = {
+                  total: bookings.length,
+                  approved: bookings.filter(b => b.status === 'approved').length,
+                  pending: bookings.filter(b => b.status === 'pending').length,
+                  rejected: bookings.filter(b => b.status === 'rejected').length,
+                  cancelled: bookings.filter(b => b.status === 'cancelled').length
+                };
+                alert(`📊 STATISTIK TEMPAHAN\n\nJumlah Tempahan: ${stats.total}\n✓ Diluluskan: ${stats.approved}\n⏳ Menunggu: ${stats.pending}\n✕ Ditolak: ${stats.rejected}\n❌ Dibatalkan: ${stats.cancelled}`);
+              }} className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded font-semibold">
+                📊 Jana Laporan
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Bilik</th>
+                    <th className="px-4 py-2 text-left">Pengguna</th>
+                    <th className="px-4 py-2 text-left">Tarikh Mula</th>
+                    <th className="px-4 py-2 text-left">Tarikh Tamat</th>
+                    <th className="px-4 py-2 text-left">Masa</th>
+                    <th className="px-4 py-2 text-left">Status</th>
+                    <th className="px-4 py-2 text-center">Tindakan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookings.map(booking => (
+                    <tr key={booking.id} className={`border-b ${booking.status === 'approved' ? 'bg-green-50' : booking.status === 'pending' ? 'bg-yellow-50' : 'bg-red-50'}`}>
+                      <td className="px-4 py-2 font-semibold">{getRoomName(booking.room_id)}</td>
+                      <td className="px-4 py-2">{booking.user_name}</td>
+                      <td className="px-4 py-2">{booking.start_date}</td>
+                      <td className="px-4 py-2">{booking.end_date}</td>
+                      <td className="px-4 py-2">{booking.start_time}</td>
+                      <td className="px-4 py-2">
+                        <span className={`px-3 py-1 rounded font-semibold text-xs ${
+                          booking.status === 'approved' ? 'bg-green-200 text-green-800' :
+                          booking.status === 'pending' ? 'bg-yellow-200 text-yellow-800' :
+                          booking.status === 'cancelled' ? 'bg-gray-200 text-gray-800' :
+                          'bg-red-200 text-red-800'
+                        }`}>
+                          {booking.status === 'approved' ? 'Diluluskan' : booking.status === 'pending' ? 'Menunggu' : booking.status === 'cancelled' ? 'Dibatalkan' : 'Ditolak'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {booking.status === 'pending' && (
+                          <div className="flex gap-2 justify-center">
+                            <button onClick={() => handleApproveBooking(booking.id)} className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs">Lulus</button>
+                            <button onClick={() => handleRejectBooking(booking.id)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">Tolak</button>
+                          </div>
+                        )}
+                        {booking.status === 'approved' && (
+                          <button onClick={() => handleCancelBooking(booking.id)} className="bg-orange-500 hover:bg-orange-600 text-white px-2 py-1 rounded text-xs">Batalkan</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           {/* Lulus Tempahan */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-800">Tempahan Menunggu Pengesahan</h2>
@@ -545,25 +620,6 @@ export default function RoomBookingSystem() {
                         <X size={18} /> Tolak
                       </button>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <h3 className="text-lg font-bold mt-8 mb-4 text-gray-800">Tempahan Diluluskan</h3>
-            <div className="space-y-2">
-              {bookings.filter(b => b.status === 'approved').length === 0 ? (
-                <p className="text-gray-600">Tiada tempahan diluluskan</p>
-              ) : (
-                bookings.filter(b => b.status === 'approved').map(booking => (
-                  <div key={booking.id} className="border rounded-lg p-4 bg-green-50 flex justify-between items-center">
-                    <div>
-                      <p className="font-semibold">{getRoomName(booking.room_id)}</p>
-                      <p className="text-sm text-gray-600">{booking.user_name} | {booking.start_date} hingga {booking.end_date}</p>
-                    </div>
-                    <button onClick={() => handleCancelBooking(booking.id)} className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm">
-                      Batalkan
-                    </button>
                   </div>
                 ))
               )}
@@ -617,22 +673,13 @@ export default function RoomBookingSystem() {
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"><Calendar size={24} /> Pilih Tarikh & Masa</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
             <div>
               <label className="block text-sm font-semibold mb-2">Tarikh Mula</label>
               <input 
                 type="date" 
                 value={bookingDates.startDate} 
                 onChange={(e) => setBookingDates({...bookingDates, startDate: e.target.value})} 
-                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-2">Tarikh Tamat</label>
-              <input 
-                type="date" 
-                value={bookingDates.endDate} 
-                onChange={(e) => setBookingDates({...bookingDates, endDate: e.target.value})} 
                 className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -646,14 +693,29 @@ export default function RoomBookingSystem() {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-2">Tempoh (Hari)</label>
+              <label className="block text-sm font-semibold mb-2">Tarikh Tamat</label>
               <input 
-                type="number" 
-                min="1"
-                value={bookingDates.duration} 
-                onChange={(e) => setBookingDates({...bookingDates, duration: parseInt(e.target.value)})} 
+                type="date" 
+                value={bookingDates.endDate} 
+                onChange={(e) => setBookingDates({...bookingDates, endDate: e.target.value})} 
                 className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2">Masa Tamat</label>
+              <input 
+                type="time" 
+                value={bookingDates.endTime || bookingDates.startTime} 
+                onChange={(e) => setBookingDates({...bookingDates, endTime: e.target.value})} 
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2">Tempoh</label>
+              <div className="px-4 py-2 border rounded bg-gray-50 flex items-center">
+                <span className="font-bold text-lg">{calculateDuration(bookingDates.startDate, bookingDates.startTime, bookingDates.endDate, bookingDates.endTime || bookingDates.startTime)}</span>
+                <span className="text-sm text-gray-600 ml-2">jam</span>
+              </div>
             </div>
           </div>
         </div>
@@ -663,17 +725,24 @@ export default function RoomBookingSystem() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-800">Bilik Tersedia</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               {getAvailableRooms().length === 0 ? (
                 <p className="col-span-full text-gray-600 text-center py-8">Tiada bilik tersedia untuk tarikh dan masa yang dipilih</p>
               ) : (
                 getAvailableRooms().map(room => (
                   <div key={room.id} className={`border-2 rounded-lg p-6 cursor-pointer transition ${selectedRoom === room.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`} onClick={() => setSelectedRoom(room.id)}>
+                    <h3 className="font-bold text-xl text-gray-800 mb-4">{room.name}</h3>
+                    <p className="text-gray-600 mb-4">{room.description}</p>
+                    
+                    {/* Display all images */}
                     {room.images && room.images.length > 0 && (
-                      <img src={room.images[0]} alt={room.name} className="w-full h-40 object-cover rounded mb-4" />
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        {room.images.map((img, idx) => (
+                          <img key={idx} src={img} alt={`${room.name}-${idx}`} className="w-full h-32 object-cover rounded" />
+                        ))}
+                      </div>
                     )}
-                    <h3 className="font-bold text-xl text-gray-800 mb-2">{room.name}</h3>
-                    <p className="text-gray-600 mb-3">{room.description}</p>
+                    
                     {selectedRoom === room.id && (
                       <button onClick={(e) => { e.stopPropagation(); handleBookRoom(); }} className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded font-semibold mt-4">
                         Tempah Bilik Ini
@@ -686,7 +755,7 @@ export default function RoomBookingSystem() {
           </div>
         ) : (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-            <p className="text-blue-800">Sila pilih tarikh, masa, dan tempoh terlebih dahulu untuk melihat bilik yang tersedia</p>
+            <p className="text-blue-800">Sila pilih tarikh, masa untuk melihat bilik yang tersedia</p>
           </div>
         )}
 
