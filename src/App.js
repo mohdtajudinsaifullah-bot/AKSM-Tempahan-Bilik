@@ -8,8 +8,7 @@ const supabaseCall = async (method, table, data = null, query = '') => {
   const headers = {
     'apikey': SUPABASE_KEY,
     'Authorization': `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-    'Prefer': 'return=minimal'
+    'Content-Type': 'application/json'
   };
 
   let url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
@@ -26,8 +25,11 @@ const supabaseCall = async (method, table, data = null, query = '') => {
       console.error('Supabase error:', response.status, errorData);
       return null;
     }
-    if (response.status === 204) return { success: true };
-    return await response.json();
+    if (response.status === 204 || response.status === 201) {
+      return { success: true };
+    }
+    const json = await response.json();
+    return json;
   } catch (error) {
     console.error('Supabase error:', error);
     return null;
@@ -57,7 +59,6 @@ export default function RoomBookingSystem() {
   const [newUserForm, setNewUserForm] = useState({ ic: '', password: '', name: '', email: '', jabatan: '', role: 'user' });
   const [confirmCancel, setConfirmCancel] = useState(null);
 
-  // Load data from Supabase
   useEffect(() => {
     loadData();
   }, []);
@@ -120,7 +121,6 @@ export default function RoomBookingSystem() {
 
   const handleLogout = () => setCurrentUser(null);
 
-  // Room management
   const handleAddRoom = () => {
     if (formData.name && formData.description) {
       const newRoom = { 
@@ -163,7 +163,6 @@ export default function RoomBookingSystem() {
     });
   };
 
-  // Check room availability
   const getAvailableRooms = () => {
     if (!bookingDates.startDate || !bookingDates.endDate || !bookingDates.startTime) return [];
     
@@ -217,8 +216,6 @@ export default function RoomBookingSystem() {
     alert('Tempahan berjaya dihantar! Admin akan memproses tempahan anda.');
     setBookingDates({ startDate: '', endDate: '', startTime: '', endTime: '', purpose: '' });
     setSelectedRoom(null);
-    
-    console.log('Email sent to admin');
   };
 
   const handleCancelBooking = (id) => {
@@ -230,15 +227,11 @@ export default function RoomBookingSystem() {
   const handleApproveBooking = (id) => {
     setBookings(bookings.map(b => b.id === id ? { ...b, status: 'approved' } : b));
     supabaseCall('PATCH', 'bookings', { status: 'approved' }, `?id=eq.${id}`);
-    const booking = bookings.find(b => b.id === id);
-    console.log('Approval email sent to:', booking.user_email);
   };
 
   const handleRejectBooking = (id) => {
     setBookings(bookings.map(b => b.id === id ? { ...b, status: 'rejected' } : b));
     supabaseCall('PATCH', 'bookings', { status: 'rejected' }, `?id=eq.${id}`);
-    const booking = bookings.find(b => b.id === id);
-    console.log('Rejection email sent to:', booking.user_email);
   };
 
   const handleAddUserByAdmin = () => {
@@ -281,6 +274,8 @@ export default function RoomBookingSystem() {
     return diffDays;
   };
 
+  const getRoomName = (roomId) => rooms.find(r => r.id === roomId)?.name || 'Unknown';
+
   const generateReport = () => {
     const stats = {
       total: bookings.length,
@@ -313,6 +308,7 @@ ${i + 1}. ${getRoomName(b.room_id)}
    Pengguna: ${b.user_name}
    Tarikh: ${b.start_date} hingga ${b.end_date}
    Masa: ${b.start_time}
+   Tujuan: ${b.purpose || '-'}
    Status: ${b.status === 'approved' ? 'Diluluskan' : b.status === 'pending' ? 'Menunggu' : b.status === 'cancelled' ? 'Dibatalkan' : 'Ditolak'}
 `).join('\n')}
 
@@ -334,14 +330,12 @@ Laporan dijana oleh: ${currentUser.name}
     URL.revokeObjectURL(url);
   };
 
-  // Login page
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-cover bg-center flex items-center justify-center p-4" style={{backgroundImage: 'url(https://www.nationalenergyawards.com.my/storage/2024/09/PJH2.jpg)'}}>
         <div className="absolute inset-0 bg-black bg-opacity-50"></div>
         
         <div className="relative grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl w-full">
-          {/* Left Info */}
           <div className="text-white p-8 flex flex-col justify-center">
             <h2 className="text-3xl font-bold mb-6">Sistem Tempahan Bilik AKSM</h2>
             <p className="text-lg mb-8">Akademi Kehakiman Syariah Malaysia</p>
@@ -362,7 +356,6 @@ Laporan dijana oleh: ${currentUser.name}
             </div>
           </div>
 
-          {/* Right Login */}
           <div className="bg-white rounded-lg shadow-2xl p-8">
             <h1 className="text-2xl font-bold text-center mb-8 text-gray-800">Selamat Datang</h1>
             
@@ -457,7 +450,6 @@ Laporan dijana oleh: ${currentUser.name}
     );
   }
 
-  // Admin page
   if (currentUser.role === 'admin') {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -474,7 +466,6 @@ Laporan dijana oleh: ${currentUser.name}
         </div>
 
         <div className="max-w-7xl mx-auto p-6 space-y-8">
-          {/* Profil Pengguna */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"><Users size={24} /> Profil Pengguna</h2>
             
@@ -533,7 +524,6 @@ Laporan dijana oleh: ${currentUser.name}
             </div>
           </div>
 
-          {/* Profil Bilik */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-800">Profil Bilik</h2>
             
@@ -584,7 +574,6 @@ Laporan dijana oleh: ${currentUser.name}
             </div>
           </div>
 
-          {/* Lulus Tempahan */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-800">Tempahan Menunggu Pengesahan</h2>
             
@@ -612,7 +601,6 @@ Laporan dijana oleh: ${currentUser.name}
             </div>
           </div>
 
-          {/* Senarai Tempahan & Statistik */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-800">Senarai Tempahan Bilik</h2>
             
@@ -692,7 +680,6 @@ Laporan dijana oleh: ${currentUser.name}
     );
   }
 
-  // User page
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-blue-600 text-white p-6 shadow">
@@ -708,7 +695,6 @@ Laporan dijana oleh: ${currentUser.name}
       </div>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Maklumat Profil */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-bold mb-4 text-gray-800">Maklumat Profil Saya</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -731,7 +717,6 @@ Laporan dijana oleh: ${currentUser.name}
           </div>
         </div>
 
-        {/* Pilih Tarikh & Masa */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"><Calendar size={24} /> Pilih Tarikh & Masa</h2>
           
@@ -792,7 +777,6 @@ Laporan dijana oleh: ${currentUser.name}
           </div>
         </div>
 
-        {/* Bilik Tersedia */}
         {bookingDates.startDate && bookingDates.endDate && bookingDates.startTime ? (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-800">Bilik Tersedia</h2>
@@ -806,7 +790,6 @@ Laporan dijana oleh: ${currentUser.name}
                     <h3 className="font-bold text-xl text-gray-800 mb-4">{room.name}</h3>
                     <p className="text-gray-600 mb-4">{room.description}</p>
                     
-                    {/* Display all images */}
                     {room.images && room.images.length > 0 && (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                         {room.images.map((img, idx) => (
@@ -831,7 +814,6 @@ Laporan dijana oleh: ${currentUser.name}
           </div>
         )}
 
-        {/* Tempahan Saya */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-2xl font-bold mb-6 text-gray-800">Tempahan Saya</h2>
           
@@ -902,3 +884,4 @@ Laporan dijana oleh: ${currentUser.name}
     </div>
   );
 }
+              
