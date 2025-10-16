@@ -273,12 +273,12 @@ export default function RoomBookingSystem() {
   };
 
   const calculateDuration = (startDate, startTime, endDate, endTime) => {
-    if (!startDate || !startTime || !endDate) return 0;
-    const start = new Date(`${startDate}T${startTime}`);
-    const end = new Date(`${endDate}T${endTime || startTime}`);
-    const diffMs = end - start;
-    const diffHours = diffMs / (1000 * 60 * 60);
-    return Math.round(diffHours * 10) / 10; // round to 1 decimal
+    if (!startDate || !endDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
   };
 
   const generateReport = () => {
