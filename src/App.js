@@ -281,8 +281,6 @@ export default function RoomBookingSystem() {
     return Math.round(diffHours * 10) / 10; // round to 1 decimal
   };
 
-  const getRoomName = (roomId) => rooms.find(r => r.id === roomId)?.name || 'Unknown';
-
   const generateReport = () => {
     const stats = {
       total: bookings.length,
