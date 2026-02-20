@@ -6,20 +6,28 @@ const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw15k0QnWTblC
 
 const sheetCall = async (method, table, data = null, idField = '', idValue = '') => {
   try {
+    // Untuk GET (Tarik data)
     if (method === 'GET') {
       const response = await fetch(`${GOOGLE_SCRIPT_URL}?table=${table}`);
-      const result = await response.json();
-      return result;
-    } else {
-      // Kita guna POST untuk handle PATCH/DELETE sebab Google Script Web App lebih stabil macam ni
-      await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors', 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method, table, data, idField, idValue })
-      });
-      return { success: true };
-    }
+      return await response.json();
+    } 
+    
+    // Untuk POST, PATCH, DELETE - Kita hantar semua guna POST ke Google
+    // Sebab Google Apps Script paling stabil terima POST
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors', // Penting untuk elak CORS error di browser
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        method: method, // bagitau Google ni POST/PATCH/DELETE
+        table: table, 
+        data: data, 
+        idField: idField, 
+        idValue: idValue 
+      })
+    });
+    
+    return { success: true };
   } catch (error) {
     console.error('API Error:', error);
     return null;
