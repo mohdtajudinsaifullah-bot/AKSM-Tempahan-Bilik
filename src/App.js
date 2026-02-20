@@ -60,21 +60,50 @@ function App() {
 
   // Handlers
   const handleLogin = async (e, type) => {
-    e.preventDefault();
-    const foundUser = users.find(u => u.ic === loginData.ic && u.password === loginData.password);
-    
-    if (foundUser) {
-      if (type === 'admin' && foundUser.role !== 'admin') {
-        alert("Anda bukan Admin!");
-        return;
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    // 1. Tarik data fresh dulu dari Google Sheets sebelum check login
+    const usersData = await sheetCall('GET', 'users');
+    if (usersData) {
+      setUsers(usersData);
+      
+      // 2. Cari user (Kita convert IC & Password ke String untuk elak mismatch)
+      const foundUser = usersData.find(u => 
+        String(u.ic).trim() === String(loginData.ic).trim() && 
+        String(u.password).trim() === String(loginData.password).trim()
+      );
+
+      if (foundUser) {
+        // 3. Check kalau login Admin
+        if (type === 'admin') {
+          if (String(foundUser.role).toLowerCase() === 'admin') {
+            setUser(foundUser);
+            setIsAdmin(true);
+            setView('adminDashboard');
+          } else {
+            alert("Akses Ditolak: Anda bukan Admin!");
+          }
+        } else {
+          // 4. Login User Biasa
+          setUser(foundUser);
+          setIsAdmin(foundUser.role === 'admin');
+          setView('userDashboard');
+        }
+      } else {
+        alert("No IC atau Password salah! Sila cuba lagi.");
       }
-      setUser(foundUser);
-      setIsAdmin(foundUser.role === 'admin');
-      setView(foundUser.role === 'admin' ? 'adminDashboard' : 'userDashboard');
     } else {
-      alert("No IC atau Password salah!");
+      alert("Gagal menghubungi server. Sila refresh page.");
     }
-  };
+  } catch (error) {
+    console.error("Login Error:", error);
+    alert("Terjadi ralat semasa proses login.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleRegister = async (e) => {
     e.preventDefault();
