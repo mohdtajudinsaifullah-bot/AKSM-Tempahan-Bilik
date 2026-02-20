@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Check, X, LogOut, Users, Upload, Calendar } from 'lucide-react';
 
 // URL Google Apps Script kau
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw15k0QnWTblCKQ_jqDWJ7ooaRe-Yqb3S03Fc7hN9h703CQWobYCi_XJzzU0y7SYJ2F/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQXq-tTufBZ1kwwYYd85DTmR2KQ1KK-gZI3e65c24rVMJ54IlE4cbY6DOJVG2tvSQo/exec';
 
 const sheetCall = async (method, table, data = null, idField = '', idValue = '') => {
   try {
