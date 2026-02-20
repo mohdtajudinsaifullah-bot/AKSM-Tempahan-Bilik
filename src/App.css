@@ -1,38 +1,107 @@
-.App {
-  text-align: center;
+:root {
+  --primary: #2563eb;
+  --secondary: #1e40af;
+  --accent: #ef4444;
+  --success: #22c55e;
+  --bg: #f8fafc;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* Layout Container */
+.login-container {
   display: flex;
-  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+}
+
+/* Left Side - Info */
+.login-left {
+  flex: 1;
+  background: url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80') center/cover;
+  position: relative;
+  color: white;
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+}
+
+.overlay {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 3rem;
+  width: 80%;
+  border-radius: 1rem;
+}
+
+.contact-info p {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+/* Right Side - Form */
+.login-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+}
+
+.form-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  border-radius: 1rem;
+}
+
+form input, form select {
+  width: 100%;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+}
+
+button {
+  width: 100%;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.3s;
+  margin-bottom: 0.5rem;
+}
+
+.btn-user { background: var(--primary); color: white; }
+.btn-admin { background: var(--accent); color: white; }
+.btn-register { background: var(--success); color: white; }
+.btn-back { background: #64748b; color: white; }
+
+.btn-admin-link, .btn-register-link {
+  background: none;
+  color: var(--primary);
+  text-decoration: underline;
+  font-size: 0.9rem;
+}
+
+/* Dashboard Style */
+.dashboard nav {
+  background: var(--primary);
   color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
 }
 
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
+main { padding: 2rem; }
+.card { background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
