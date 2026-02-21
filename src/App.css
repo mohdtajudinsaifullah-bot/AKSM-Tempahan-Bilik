@@ -1,65 +1,179 @@
+/* --- 1. GLOBAL RESET --- */
+:root {
+  --primary: #2563eb;
+  --secondary: #1e293b;
+  --accent: #ef4444;
+  --bg: #f1f5f9;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  height: 100%;
+}
+
+/* --- 2. LOGIN PAGE STYLE (IMAGE 1) --- */
+.login-container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
+.login-left {
+  flex: 1.2; /* Lebih lebar sikit untuk gambar pejabat */
+  background: url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80') center/cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.overlay {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 3rem;
+  width: 80%;
+  border-radius: 1.5rem;
+  color: white;
+  backdrop-filter: blur(5px);
+}
+
+.overlay h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.subtitle { font-size: 1.2rem; color: #cbd5e1; margin-bottom: 2rem; }
+
+.contact-info p {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 15px 0;
+  font-size: 1rem;
+}
+
+.login-right {
+  flex: 0.8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  padding: 2rem;
+}
+
+.form-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.form-card h2 { font-size: 2rem; margin-bottom: 1.5rem; color: #1e293b; }
+
+.form-card input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.btn-user, .btn-admin, .btn-register {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+  color: white;
+}
+
+.btn-user { background: var(--primary); }
+.btn-admin { background: var(--accent); }
+.btn-register { background: #10b981; }
+.btn-back { background: none; color: #64748b; border: 1px solid #e2e8f0; margin-top: 10px; width: 100%; padding: 10px; border-radius: 8px; cursor: pointer;}
+
+.extra-links {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.extra-links button {
+  background: none;
+  border: none;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+/* --- 3. DASHBOARD STYLE (IMAGE 2) --- */
 .app-wrapper {
   display: flex;
   min-height: 100vh;
 }
 
 .sidebar {
-  width: 250px;
-  background: #1e293b;
+  width: 260px;
+  background: var(--secondary);
   color: white;
-  padding: 20px;
+  padding: 25px 15px;
   display: flex;
   flex-direction: column;
 }
 
+.sidebar-header {
+  padding-bottom: 20px;
+  border-bottom: 1px solid #334155;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.menu { flex: 1; }
+
 .menu button {
   width: 100%;
   text-align: left;
-  padding: 12px;
+  padding: 14px 18px;
   background: none;
   border: none;
   color: #cbd5e1;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
-  border-radius: 8px;
+  gap: 12px;
+  border-radius: 10px;
+  margin-bottom: 5px;
+  font-size: 1rem;
 }
 
-.menu button.active {
-  background: #334155;
-  color: white;
-}
+.menu button:hover { background: #334155; color: white; }
+.menu button.active { background: var(--primary); color: white; }
+
+.logout-btn { margin-top: auto; color: #fb7185 !important; }
 
 .content {
   flex: 1;
-  background: #f1f5f9;
-  padding: 30px;
+  background: var(--bg);
+  padding: 40px;
 }
 
 .card-pro {
   background: white;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 
-.rooms-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
+.profile-info p {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  margin: 0;
+}
+
+.placeholder-content {
   margin-top: 20px;
-}
-
-.room-card-v2 {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-.room-card-v2 img {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
+  padding: 50px;
+  text-align: center;
+  border: 2px dashed #cbd5e1;
+  border-radius: 15px;
+  color: #64748b;
 }
