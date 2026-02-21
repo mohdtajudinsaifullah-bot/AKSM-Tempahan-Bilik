@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Check, X, LogOut, Users, Upload, Calendar, MapPin, Phone, Mail } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X, LogOut, Users, Upload, Calendar, MapPin, Phone, Mail, Home, History, Info } from 'lucide-react';
 import './App.css';
 
-// === TUKAR URL INI DENGAN URL GOOGLE SCRIPT KAU ===
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQXq-tTufBZ1kwwYYd85DTmR2KQ1KK-gZI3e65c24rVMJ54IlE4cbY6DOJVG2tvSQo/exec';
 
 function App() {
   const [view, setView] = useState('login');
+  const [activeTab, setActiveTab] = useState('profile');
   const [user, setUser] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [rooms, setRooms] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [users, setUsers] = useState([]);
@@ -16,216 +15,162 @@ function App() {
 
   // Form States
   const [loginData, setLoginData] = useState({ ic: '', password: '' });
-  const [registerData, setRegisterData] = useState({ ic: '', password: '', name: '', email: '', jabatan: '' });
-  const [bookingForm, setBookingForm] = useState({
-    room_id: '', start_date: '', end_date: '', start_time: '', end_time: '', purpose: ''
-  });
+  const [roomForm, setRoomForm] = useState({ name: '', capacity: '', description: '', images: [] });
+  const [bookingFilter, setBookingFilter] = useState({ start_date: '', end_date: '', start_time: '', end_time: '' });
+  const [selectedRoom, setSelectedRoom] = useState(null);
 
-  // Function panggil Google Sheets
   const sheetCall = async (method, table, data = null, idField = '', idValue = '') => {
     try {
       if (method === 'GET') {
         const response = await fetch(`${GOOGLE_SCRIPT_URL}?table=${table}`);
         return await response.json();
       } else {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
+        await fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
-          mode: 'no-cors', // Penting untuk elak CORS error
+          mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ method, table, data, idField, idValue })
         });
         return { success: true };
       }
-    } catch (error) {
-      console.error('Error:', error);
-      return null;
-    }
+    } catch (error) { return null; }
   };
 
-  // Fetch Data
   const fetchData = async () => {
     setLoading(true);
-    const roomsData = await sheetCall('GET', 'rooms');
-    const bookingsData = await sheetCall('GET', 'bookings');
-    const usersData = await sheetCall('GET', 'users');
-    if (roomsData) setRooms(roomsData);
-    if (bookingsData) setBookings(bookingsData);
-    if (usersData) setUsers(usersData);
+    const r = await sheetCall('GET', 'rooms');
+    const b = await sheetCall('GET', 'bookings');
+    const u = await sheetCall('GET', 'users');
+    if (r) setRooms(r);
+    if (b) setBookings(b);
+    if (u) setUsers(u);
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  // Handlers
-  const handleLogin = async (e, type) => {
-  e.preventDefault();
-  setLoading(true);
+  // Logik Check Bilik Kosong
+  const getAvailableRooms = () => {
+    if (!bookingFilter.start_date || !bookingFilter.start_time) return [];
+    
+    return rooms.filter(room => {
+      const isBooked = bookings.some(b => {
+        if (b.room_id !== room.id || b.status === 'rejected') return false;
+        // Logik ringkas pertembungan masa
+        return (bookingFilter.start_date <= b.end_date && bookingFilter.end_date >= b.start_date);
+      });
+      return !isBooked;
+    });
+  };
 
-  try {
-    // 1. Tarik data fresh dulu dari Google Sheets sebelum check login
-    const usersData = await sheetCall('GET', 'users');
-    if (usersData) {
-      setUsers(usersData);
-      
-      // 2. Cari user (Kita convert IC & Password ke String untuk elak mismatch)
-      const foundUser = usersData.find(u => 
-        String(u.ic).trim() === String(loginData.ic).trim() && 
-        String(u.password).trim() === String(loginData.password).trim()
-      );
+  // Image Upload Handler (Multiple)
+  const handleImages = (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setRoomForm(prev => ({ ...prev, images: [...prev.images, reader.result] }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
 
-      if (foundUser) {
-        // 3. Check kalau login Admin
-        if (type === 'admin') {
-          if (String(foundUser.role).toLowerCase() === 'admin') {
-            setUser(foundUser);
-            setIsAdmin(true);
-            setView('adminDashboard');
-          } else {
-            alert("Akses Ditolak: Anda bukan Admin!");
-          }
-        } else {
-          // 4. Login User Biasa
-          setUser(foundUser);
-          setIsAdmin(foundUser.role === 'admin');
-          setView('userDashboard');
-        }
-      } else {
-        alert("No IC atau Password salah! Sila cuba lagi.");
-      }
-    } else {
-      alert("Gagal menghubungi server. Sila refresh page.");
-    }
-  } catch (error) {
-    console.error("Login Error:", error);
-    alert("Terjadi ralat semasa proses login.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    const newUser = { ...registerData, role: 'user' };
-    await sheetCall('POST', 'users', newUser);
-    alert("Pendaftaran berjaya! Sila log masuk.");
-    setView('login');
+  const handleAddRoom = async () => {
+    const newRoom = { ...roomForm, id: Date.now().toString(), images: JSON.stringify(roomForm.images) };
+    await sheetCall('POST', 'rooms', newRoom);
+    alert("Bilik ditambah!");
+    setRoomForm({ name: '', capacity: '', description: '', images: [] });
     fetchData();
   };
 
-  const handleBookRoom = async (e) => {
-    e.preventDefault();
-    const newBooking = {
-      ...bookingForm,
-      user_ic: user.ic,
-      user_name: user.name,
-      user_email: user.email,
-      status: 'pending',
-      created_at: new Date().toISOString()
-    };
-    await sheetCall('POST', 'bookings', newBooking);
-    alert("Tempahan dihantar untuk kelulusan!");
-    setBookingForm({ room_id: '', start_date: '', end_date: '', start_time: '', end_time: '', purpose: '' });
-    fetchData();
-  };
-
-  // Render Login Page
-  if (view === 'login' || view === 'register' || view === 'adminLogin') {
-    return (
-      <div className="login-container">
-        <div className="login-left">
-          <div className="overlay">
-            <h1>Sistem Tempahan Bilik AKSM</h1>
-            <p>Akademi Kehakiman Syariah Malaysia</p>
-            <div className="contact-info">
-              <p><MapPin size={18} /> Tingkat 6, Menara PJH, Putrajaya</p>
-              <p><Phone size={18} /> 0123456789</p>
-              <p><Mail size={18} /> aksm@esyariah.gov.my</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="login-right">
-          <div className="form-card">
-            {view === 'login' && (
-              <>
-                <h2>Selamat Datang</h2>
-                <form onSubmit={(e) => handleLogin(e, 'user')}>
-                  <input type="text" placeholder="No IC" onChange={e => setLoginData({...loginData, ic: e.target.value})} required />
-                  <input type="password" placeholder="Password" onChange={e => setLoginData({...loginData, password: e.target.value})} required />
-                  <button type="submit" className="btn-user">Login Sebagai User</button>
-                </form>
-                <button onClick={() => setView('adminLogin')} className="btn-admin-link">Login Sebagai Admin</button>
-                <button onClick={() => setView('register')} className="btn-register-link">Daftar User Baru</button>
-              </>
-            )}
-
-            {view === 'adminLogin' && (
-              <>
-                <h2>Login Admin</h2>
-                <form onSubmit={(e) => handleLogin(e, 'admin')}>
-                  <input type="text" placeholder="No IC Admin" onChange={e => setLoginData({...loginData, ic: e.target.value})} required />
-                  <input type="password" placeholder="Password" onChange={e => setLoginData({...loginData, password: e.target.value})} required />
-                  <button type="submit" className="btn-admin">Login Admin</button>
-                </form>
-                <button onClick={() => setView('login')} className="btn-back">Kembali</button>
-              </>
-            )}
-
-            {view === 'register' && (
-              <>
-                <h2>Daftar Baru</h2>
-                <form onSubmit={handleRegister}>
-                  <input type="text" placeholder="No IC" onChange={e => setRegisterData({...registerData, ic: e.target.value})} required />
-                  <input type="text" placeholder="Nama Penuh" onChange={e => setRegisterData({...registerData, name: e.target.value})} required />
-                  <input type="email" placeholder="Emel" onChange={e => setRegisterData({...registerData, email: e.target.value})} required />
-                  <input type="text" placeholder="Jabatan" onChange={e => setRegisterData({...registerData, jabatan: e.target.value})} required />
-                  <input type="password" placeholder="Password" onChange={e => setRegisterData({...registerData, password: e.target.value})} required />
-                  <button type="submit" className="btn-register">Daftar</button>
-                </form>
-                <button onClick={() => setView('login')} className="btn-back">Kembali</button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (view === 'login') { /* ... Guna kod login lama kau ... */ }
 
   return (
-    <div className="dashboard">
-      <nav>
-        <span>Selamat datang, {user?.name}!</span>
-        <button onClick={() => {setUser(null); setView('login');}}><LogOut size={16} /> Logout</button>
-      </nav>
+    <div className="app-wrapper">
+      {/* SIDEBAR NAVIGATION */}
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <h3>AKSM Booking</h3>
+          <p>{user?.role === 'admin' ? 'ADMIN PANEL' : 'USER PANEL'}</p>
+        </div>
+        <nav className="menu">
+          {user?.role === 'admin' ? (
+            <>
+              <button onClick={() => setActiveTab('manageRooms')} className={activeTab === 'manageRooms' ? 'active' : ''}><Home size={18}/> Urus Bilik</button>
+              <button onClick={() => setActiveTab('manageBookings')} className={activeTab === 'manageBookings' ? 'active' : ''}><Calendar size={18}/> Kelulusan</button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setActiveTab('profile')} className={activeTab === 'profile' ? 'active' : ''}><Info size={18}/> Maklumat User</button>
+              <button onClick={() => setActiveTab('book')} className={activeTab === 'book' ? 'active' : ''}><Plus size={18}/> Tempahan Baru</button>
+              <button onClick={() => setActiveTab('history')} className={activeTab === 'history' ? 'active' : ''}><History size={18}/> Sejarah</button>
+            </>
+          )}
+          <button onClick={() => window.location.reload()} className="logout-btn"><LogOut size={18}/> Keluar</button>
+        </nav>
+      </aside>
 
-      <main>
-        {view === 'userDashboard' && (
-          <div className="user-section">
-            <div className="card">
-              <h3><Calendar size={20} /> Tempah Bilik</h3>
-              <form onSubmit={handleBookRoom}>
-                <select onChange={e => setBookingForm({...bookingForm, room_id: e.target.value})} required>
-                  <option value="">Pilih Bilik</option>
-                  {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </select>
-                <div className="grid">
-                  <input type="date" onChange={e => setBookingForm({...bookingForm, start_date: e.target.value})} required />
-                  <input type="time" onChange={e => setBookingForm({...bookingForm, start_time: e.target.value})} required />
-                </div>
-                <input type="text" placeholder="Tujuan Mesyuarat" onChange={e => setBookingForm({...bookingForm, purpose: e.target.value})} required />
-                <button type="submit" className="btn-book">Hantar Tempahan</button>
-              </form>
+      {/* MAIN CONTENT AREA */}
+      <main className="content">
+        {/* VIEW: MAKLUMAT USER */}
+        {activeTab === 'profile' && (
+          <div className="card-pro">
+            <h2>Profil Pengguna</h2>
+            <div className="profile-grid">
+              <p><strong>Nama:</strong> {user?.name}</p>
+              <p><strong>IC:</strong> {user?.ic}</p>
+              <p><strong>Jabatan:</strong> {user?.jabatan}</p>
+              <p><strong>Emel:</strong> {user?.email}</p>
             </div>
           </div>
         )}
-        
-        {view === 'adminDashboard' && (
-          <div className="admin-section">
-            <h3>Dashboard Admin</h3>
-            <p>Data Bilik & User akan dipaparkan di sini.</p>
-            {/* Tambah UI Admin kau kat sini nanti */}
+
+        {/* VIEW: TEMPAHAN BARU (FILTER DULU) */}
+        {activeTab === 'book' && (
+          <div className="booking-flow">
+            <div className="card-pro">
+              <h3>1. Pilih Tarikh & Masa</h3>
+              <div className="filter-grid">
+                <input type="date" onChange={e => setBookingFilter({...bookingFilter, start_date: e.target.value})} />
+                <input type="time" onChange={e => setBookingFilter({...bookingFilter, start_time: e.target.value})} />
+                <span>Hingga</span>
+                <input type="date" onChange={e => setBookingFilter({...bookingFilter, end_date: e.target.value})} />
+                <input type="time" onChange={e => setBookingFilter({...bookingFilter, end_time: e.target.value})} />
+              </div>
+            </div>
+
+            <div className="rooms-list">
+              <h3>2. Bilik Tersedia</h3>
+              <div className="rooms-grid">
+                {getAvailableRooms().map(room => (
+                  <div key={room.id} className="room-card-v2">
+                    <img src={JSON.parse(room.images || "[]")[0] || 'placeholder.jpg'} alt="room" />
+                    <div className="room-info">
+                      <h4>{room.name}</h4>
+                      <p>Kapasiti: {room.capacity} Orang</p>
+                      <button onClick={() => setSelectedRoom(room)} className="btn-select">Pilih Bilik</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: ADMIN MANAGE ROOMS */}
+        {activeTab === 'manageRooms' && (
+          <div className="admin-rooms">
+            <div className="card-pro">
+              <h3>Tambah Bilik Baru</h3>
+              <input type="text" placeholder="Nama Bilik" onChange={e => setRoomForm({...roomForm, name: e.target.value})} />
+              <input type="number" placeholder="Kapasiti" onChange={e => setRoomForm({...roomForm, capacity: e.target.value})} />
+              <textarea placeholder="Deskripsi" onChange={e => setRoomForm({...roomForm, description: e.target.value})} />
+              <input type="file" multiple onChange={handleImages} />
+              <div className="preview-imgs">
+                {roomForm.images.map((img, i) => <img key={i} src={img} width="50" />)}
+              </div>
+              <button onClick={handleAddRoom} className="btn-add">Simpan Bilik</button>
+            </div>
           </div>
         )}
       </main>
