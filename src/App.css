@@ -112,3 +112,45 @@ body, html {
 .del-img { position: absolute; -top: 5px; -right: 5px; background: red; color: white; border-radius: 50%; border: none; cursor: pointer; padding: 2px; }
 .upload-box { width: 60px; height: 60px; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; }
 .upload-box:hover { border-color: var(--primary); color: var(--primary); }
+
+/* BACKGROUND LOGIN TRANSPARENT 20% */
+.overlay-glass {
+  background: rgba(0, 0, 0, 0.2); /* 20% opacity hitam, nampak belakang */
+  padding: 3rem;
+  width: 80%;
+  border-radius: 1.5rem;
+  color: white;
+  backdrop-filter: blur(2px); /* Blur sikit je biar tulisan jelas */
+}
+
+.welcome-text {
+  font-size: 1.8rem;
+  margin-bottom: 2rem;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+/* PROFILE VIEW (BACK TO IMAGE 3 STYLE) */
+.profile-view h2 {
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+.profile-details p {
+  font-size: 1.1rem;
+  margin: 15px 0;
+}
+.profile-details strong {
+  width: 120px;
+  display: inline-block;
+}
+
+/* SEJARAH TABLE FIX */
+.badge.APPROVED { background: #dcfce7; color: #166534; }
+
+/* IMAGE MANAGER FIXES */
+.image-previews { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.img-thumb { width: 65px; height: 65px; object-fit: cover; border-radius: 10px; border: 1px solid #ddd; }
+.thumb-container { position: relative; }
+.del-img { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
+.upload-box { width: 65px; height: 65px; border: 2px dashed #cbd5e1; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #94a3b8; }
