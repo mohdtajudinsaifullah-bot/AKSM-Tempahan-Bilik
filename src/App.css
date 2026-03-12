@@ -103,3 +103,12 @@ body, html {
   text-align: right;
   margin-bottom: 10px;
 }
+
+/* Styling untuk pengurusan gambar */
+.image-manager { margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; }
+.image-previews { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.img-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; }
+.thumb-container { position: relative; }
+.del-img { position: absolute; -top: 5px; -right: 5px; background: red; color: white; border-radius: 50%; border: none; cursor: pointer; padding: 2px; }
+.upload-box { width: 60px; height: 60px; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; }
+.upload-box:hover { border-color: var(--primary); color: var(--primary); }
