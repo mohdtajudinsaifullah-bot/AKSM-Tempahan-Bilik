@@ -3,6 +3,7 @@ import { Plus, Trash2, Edit2, Check, X, LogOut, Users, Calendar, Home, History, 
 import './App.css';
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkXpSRT1YqBE6V4iqKjRN-VDf8XVoNqXh9Tl-OQL0WdBiQ5h2x6t6YZQFDyiRj1n3X/exec';
+const ADMIN_WHATSAPP = "60123456789"; 
 
 function App() {
   const [view, setView] = useState('login'); 
@@ -12,11 +13,12 @@ function App() {
   const [bookings, setBookings] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false); // State untuk loading daftar
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
 
-  const [loginData, setLoginData] = useState({ ic: '', password: '' });
-  const [registerData, setRegisterData] = useState({ ic: '', password: '', name: '', email: '', jabatan: '' });
+  const [loginData, setLoginData] = useState({ username: '', password: '' });
+  const [registerData, setRegisterData] = useState({ username: '', password: '', name: '', email: '', jabatan: '' });
   const [bookingFilter, setBookingFilter] = useState({ start_date: '', end_date: '' });
 
   const sheetCall = async (method, table, data = null, idField = '', idValue = '') => {
@@ -54,23 +56,25 @@ function App() {
     e.preventDefault();
     setLoading(true);
     const latestUsers = await sheetCall('GET', 'users');
-    const foundUser = latestUsers?.find(u => String(u.ic) === String(loginData.ic) && String(u.password) === String(loginData.password));
+    const foundUser = latestUsers?.find(u => 
+      String(u.username || u.ic).toLowerCase() === String(loginData.username).toLowerCase() && 
+      String(u.password) === String(loginData.password)
+    );
     
     if (foundUser) {
       if (type === 'admin' && foundUser.role !== 'admin') {
-        alert("Akses Ditolak!");
+        alert("Akses Ditolak! Anda bukan admin.");
       } else {
         setUser(foundUser);
         setView('dashboard');
         setActiveTab(foundUser.role === 'admin' ? 'tindakan' : 'profile');
       }
     } else {
-      alert("IC atau Password salah!");
+      alert("Username atau Password salah!");
     }
     setLoading(false);
   };
 
-  // --- LOGIK FILTER TINDAKAN (BELUM MELEPASI HARI INI) ---
   const today = new Date().toISOString().split('T')[0];
   const activeBookings = bookings.filter(b => b.start_date >= today);
 
@@ -95,13 +99,18 @@ function App() {
               <>
                 <h2>Selamat Datang</h2>
                 <form onSubmit={(e) => handleLogin(e, 'user')}>
-                  <input type="text" placeholder="No IC" onChange={e => setLoginData({...loginData, ic: e.target.value})} required />
+                  <input type="text" placeholder="Username" onChange={e => setLoginData({...loginData, username: e.target.value})} required />
                   <input type="password" placeholder="Password" onChange={e => setLoginData({...loginData, password: e.target.value})} required />
-                  <button type="submit" className="btn-user" disabled={loading}>{loading ? 'Sila Tunggu...' : 'Login User'}</button>
+                  <button type="submit" className="btn-user" disabled={loading}>
+                    {loading ? 'Sila Tunggu...' : 'Login User'}
+                  </button>
                 </form>
-                <div className="extra-links">
-                    <button onClick={() => setView('adminLogin')}>Login Admin</button>
-                    <button onClick={() => setView('register')}>Daftar Baru</button>
+                <div className="forgot-pw-link">
+                   <a href={`https://wa.me/${ADMIN_WHATSAPP}?text=Saya%20lupa%20password`} target="_blank" rel="noreferrer">Lupa Password?</a>
+                </div>
+                <div className="extra-links-row">
+                    <button onClick={() => setView('adminLogin')} className="link-btn">Login Admin</button>
+                    <button onClick={() => setView('register')} className="link-btn">Daftar Baru</button>
                 </div>
               </>
             )}
@@ -110,7 +119,7 @@ function App() {
                <>
                <h2>Login Admin</h2>
                <form onSubmit={(e) => handleLogin(e, 'admin')}>
-                 <input type="text" placeholder="IC Admin" onChange={e => setLoginData({...loginData, ic: e.target.value})} required />
+                 <input type="text" placeholder="Username Admin" onChange={e => setLoginData({...loginData, username: e.target.value})} required />
                  <input type="password" placeholder="Password" onChange={e => setLoginData({...loginData, password: e.target.value})} required />
                  <button type="submit" className="btn-admin">Login Admin</button>
                </form>
@@ -123,20 +132,27 @@ function App() {
                 <h2>Pendaftaran User</h2>
                 <form onSubmit={async (e) => {
                   e.preventDefault();
-                  setLoading(true);
+                  setIsRegistering(true); // Start loading pendaftaran
                   await sheetCall('POST', 'users', {...registerData, role: 'user'});
-                  alert("Berjaya Daftar!");
+                  alert("Pendaftaran Berjaya!");
+                  setIsRegistering(false); // Stop loading pendaftaran
                   setView('login');
                   fetchData();
                 }}>
-                  <input type="text" placeholder="No IC" onChange={e => setRegisterData({...registerData, ic: e.target.value})} required />
+                  <input type="text" placeholder="Username Pilihan" onChange={e => setRegisterData({...registerData, username: e.target.value})} required />
                   <input type="text" placeholder="Nama Penuh" onChange={e => setRegisterData({...registerData, name: e.target.value})} required />
                   <input type="text" placeholder="Jabatan" onChange={e => setRegisterData({...registerData, jabatan: e.target.value})} required />
-                  <input type="email" placeholder="Emel (Untuk Notifikasi)" onChange={e => setRegisterData({...registerData, email: e.target.value})} required />
+                  <input type="email" placeholder="Emel" onChange={e => setRegisterData({...registerData, email: e.target.value})} required />
                   <input type="password" placeholder="Password" onChange={e => setRegisterData({...registerData, password: e.target.value})} required />
-                  <button type="submit" className="btn-register">Daftar Sekarang</button>
+                  <button type="submit" className="btn-register" disabled={isRegistering}>
+                    {isRegistering ? (
+                      <span style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'10px'}}>
+                        <Loader2 className="animate-spin" size={18}/> Sila Tunggu...
+                      </span>
+                    ) : 'Daftar Sekarang'}
+                  </button>
                 </form>
-                <button onClick={() => setView('login')} className="btn-back">Kembali</button>
+                <button onClick={() => setView('login')} className="btn-back" disabled={isRegistering}>Kembali</button>
               </>
             )}
           </div>
@@ -148,7 +164,11 @@ function App() {
   return (
     <div className="app-wrapper">
       <aside className="sidebar">
-        <div className="sidebar-header"><h3>AKSM</h3><p>{user?.name}</p></div>
+        <div className="sidebar-header">
+            <Building size={32} color="#2563eb" style={{marginBottom: '10px'}}/>
+            <h3>AKSM Booking</h3>
+            <p>{user?.name}</p>
+        </div>
         <nav className="menu">
           {user?.role === 'admin' ? (
             <>
@@ -168,20 +188,20 @@ function App() {
       </aside>
 
       <main className="content">
-        {/* PROFILE USER - DAH ADA JABATAN */}
+        {/* LOGIK UNTUK PAPARAN SETIAP MENU */}
+        
         {activeTab === 'profile' && (
           <div className="card-pro">
-            <h2><Info /> Profil Saya</h2>
-            <div className="profile-info" style={{lineHeight:'2'}}>
+            <h2>Profil Saya</h2>
+            <div className="profile-info">
+              <p><strong>Username:</strong> {user?.username || user?.ic}</p>
               <p><strong>Nama:</strong> {user?.name}</p>
-              <p><strong>Jabatan:</strong> {user?.jabatan || 'Tiada Maklumat'}</p>
-              <p><strong>No IC:</strong> {user?.ic}</p>
+              <p><strong>Jabatan:</strong> {user?.jabatan}</p>
               <p><strong>Emel:</strong> {user?.email}</p>
             </div>
           </div>
         )}
 
-        {/* TAB TINDAKAN (ADMIN) - FILTER TARIKH AKAN DATANG */}
         {activeTab === 'tindakan' && (
           <div className="card-pro">
             <h2>Tindakan Admin (Aktif)</h2>
@@ -207,84 +227,35 @@ function App() {
           </div>
         )}
 
-        {/* TAB SENARAI TEMPAHAN (ADMIN) - SEMUA DATA */}
         {activeTab === 'senarai' && (
           <div className="card-pro">
-            <h2>Semarai Semua Tempahan</h2>
+            <h2>Senarai Semua Tempahan</h2>
             <table className="pro-table">
               <thead><tr><th>Bilik</th><th>Pemohon</th><th>Mula</th><th>Tamat</th></tr></thead>
               <tbody>
-                {bookings.length > 0 ? bookings.map(b => (
-                  <tr key={b.id}>
-                    <td>{b.room_name}</td><td>{b.user_name}</td><td>{b.start_date}</td><td>{b.end_date}</td>
-                  </tr>
-                )) : <tr><td colSpan="4" style={{textAlign:'center'}}>Tiada data.</td></tr>}
+                {bookings.map(b => (
+                  <tr key={b.id}><td>{b.room_name}</td><td>{b.user_name}</td><td>{b.start_date}</td><td>{b.end_date}</td></tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
 
-        {/* KEKALKAN TAB LAIN SEPERTI SEBELUM INI (Urus Bilik, Tempah, dsb) */}
-        {activeTab === 'book' && (
-          <div className="booking-section">
-            <div className="card-pro" style={{marginBottom: '20px'}}>
-              <h3>Pilih Tarikh Tempahan</h3>
-              <div className="filter-row" style={{display: 'flex', gap: '15px', marginTop: '10px'}}>
-                <input type="date" className="pro-input" value={bookingFilter.start_date} 
-                  onChange={e => {
-                    const newStart = e.target.value;
-                    if (bookingFilter.end_date && newStart > bookingFilter.end_date) {
-                      alert("Tarikh mula tidak boleh lebih dari tarikh tamat!");
-                    } else { setBookingFilter({...bookingFilter, start_date: newStart}); }
-                  }} />
-                <input type="date" className="pro-input" value={bookingFilter.end_date} 
-                  onChange={e => {
-                    const newEnd = e.target.value;
-                    if (bookingFilter.start_date && newEnd < bookingFilter.start_date) {
-                      alert("Tarikh tamat tidak boleh kurang dari tarikh mula!");
-                    } else { setBookingFilter({...bookingFilter, end_date: newEnd}); }
-                  }} />
-              </div>
-            </div>
-            <div className="rooms-grid">
-              {rooms.filter(room => {
-                if (!bookingFilter.start_date) return true;
-                return !bookings.some(b => b.room_id === room.id && b.status === 'approved' && (bookingFilter.start_date <= b.end_date && (bookingFilter.end_date || bookingFilter.start_date) >= b.start_date));
-              }).map(room => (
-                <div key={room.id} className="room-card-v2">
-                  <img src={JSON.parse(room.images || '[""]') [0] || 'https://placehold.co/600x400'} alt="bilik" />
-                  <div className="p-3">
-                    <h4>{room.name}</h4>
-                    <button className="btn-user" disabled={isSubmitting || !bookingFilter.start_date}
-                      onClick={async () => {
-                        setIsSubmitting(true);
-                        const newB = { id: Date.now().toString(), room_id: room.id, room_name: room.name, user_ic: user.ic, user_name: user.name, email: user.email, start_date: bookingFilter.start_date, end_date: bookingFilter.end_date || bookingFilter.start_date, status: 'approved' };
-                        await sheetCall('POST', 'bookings', newB);
-                        alert("Berjaya! Notifikasi auto-hantar.");
-                        await fetchData(); setIsSubmitting(false); setActiveTab('history');
-                      }}>Tempah Sekarang</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {activeTab === 'manageRooms' && (
           <div className="card-pro">
-            <div style={{display:'flex', justifyContent:'space-between', marginBottom:'15px'}}>
+            <div className="flex-header">
               <h2>Urus Bilik</h2>
-              <button className="btn-user" style={{width:'auto'}} onClick={() => setEditingRoom({name:'', capacity:'', images:'[]', isNew:true})}>+ Bilik</button>
+              <button className="btn-add" onClick={() => setEditingRoom({name:'', capacity:'', images:'[]', isNew:true})}>+ Tambah Bilik</button>
             </div>
             <table className="pro-table">
               <thead><tr><th>Nama Bilik</th><th>Kapasiti</th><th>Aksi</th></tr></thead>
               <tbody>
                 {rooms.map(r => (
                   <tr key={r.id}>
-                    <td>{r.name}</td><td>{r.capacity}</td>
+                    <td>{r.name}</td><td>{r.capacity} Pax</td>
                     <td>
-                      <button onClick={() => setEditingRoom(r)}><Edit2 size={16}/></button>
-                      <button onClick={() => {if(window.confirm("Hapus?")) sheetCall('DELETE','rooms',null,'id',r.id).then(()=>fetchData())}}><Trash2 size={16} color="red"/></button>
+                      <button onClick={() => setEditingRoom(r)} className="btn-approve"><Edit2 size={16}/></button>
+                      <button onClick={() => {if(window.confirm("Hapus?")) sheetCall('DELETE','rooms',null,'id',r.id).then(()=>fetchData())}} className="btn-reject" style={{marginLeft:'5px'}}><Trash2 size={16}/></button>
                     </td>
                   </tr>
                 ))}
@@ -293,27 +264,34 @@ function App() {
           </div>
         )}
 
-        {editingRoom && (
-          <div className="modal-overlay">
-            <div className="modal-content card-pro">
-              <h3>{editingRoom.isNew ? 'Tambah' : 'Edit'} Bilik</h3>
-              <input className="pro-input" placeholder="Nama" value={editingRoom.name} onChange={e => setEditingRoom({...editingRoom, name: e.target.value})} />
-              <input className="pro-input" type="number" placeholder="Kapasiti" value={editingRoom.capacity} onChange={e => setEditingRoom({...editingRoom, capacity: e.target.value})} />
-              <input type="file" multiple onChange={async (e) => {
-                 const base64s = await Promise.all(Array.from(e.target.files).map(f => new Promise(res => {
-                   const r = new FileReader(); r.onload = (ev) => res(ev.target.result); r.readAsDataURL(f);
-                 })));
-                 setEditingRoom({...editingRoom, newImages: base64s});
-              }} />
-              <div style={{marginTop:'15px', display:'flex', gap:'10px'}}>
-                <button className="btn-user" onClick={async () => {
-                  const data = {...editingRoom, images: JSON.stringify(editingRoom.newImages || JSON.parse(editingRoom.images || '[]'))};
-                  delete data.newImages; delete data.isNew;
-                  await sheetCall(editingRoom.isNew ? 'POST':'PATCH', 'rooms', data, 'id', editingRoom.id);
-                  setEditingRoom(null); fetchData();
-                }}>Simpan</button>
-                <button className="btn-back" onClick={() => setEditingRoom(null)}>Batal</button>
+        {activeTab === 'book' && (
+          <div className="booking-section">
+            <div className="card-pro" style={{marginBottom: '20px'}}>
+              <h3>Pilih Tarikh Tempahan</h3>
+              <div className="filter-row">
+                <input type="date" className="pro-input" value={bookingFilter.start_date} onChange={e => setBookingFilter({...bookingFilter, start_date: e.target.value})} />
+                <input type="date" className="pro-input" value={bookingFilter.end_date} onChange={e => setBookingFilter({...bookingFilter, end_date: e.target.value})} />
               </div>
+            </div>
+            <div className="rooms-grid">
+              {rooms.map(room => (
+                <div key={room.id} className="room-card-v2">
+                  <div className="room-img-container">
+                    <img src={JSON.parse(room.images || '[""]') [0] || 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80'} alt="bilik" />
+                    <span className="room-badge">{room.capacity} Pax</span>
+                  </div>
+                  <div className="p-3">
+                    <h4>{room.name}</h4>
+                    <button className="btn-user" style={{marginTop:'10px'}} disabled={!bookingFilter.start_date}
+                      onClick={async () => {
+                        const newB = { id: Date.now().toString(), room_id: room.id, room_name: room.name, user_ic: user.username, user_name: user.name, email: user.email, start_date: bookingFilter.start_date, end_date: bookingFilter.end_date || bookingFilter.start_date, status: 'approved' };
+                        await sheetCall('POST', 'bookings', newB);
+                        alert("Tempahan Berjaya!");
+                        fetchData(); setActiveTab('history');
+                      }}>Tempah Sekarang</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -324,11 +302,28 @@ function App() {
             <table className="pro-table">
               <thead><tr><th>Bilik</th><th>Tarikh</th><th>Status</th></tr></thead>
               <tbody>
-                {bookings.filter(b => String(b.user_ic) === String(user.ic)).map(b => (
+                {bookings.filter(b => String(b.user_ic) === String(user?.username || user?.ic)).map(b => (
                   <tr key={b.id}><td>{b.room_name}</td><td>{b.start_date}</td><td><span className={`badge ${b.status}`}>{b.status}</span></td></tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {editingRoom && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h3>{editingRoom.isNew ? 'Tambah' : 'Edit'} Bilik</h3>
+              <input placeholder="Nama Bilik" value={editingRoom.name} onChange={e => setEditingRoom({...editingRoom, name: e.target.value})} />
+              <input type="number" placeholder="Kapasiti" value={editingRoom.capacity} onChange={e => setEditingRoom({...editingRoom, capacity: e.target.value})} />
+              <div style={{marginTop:'20px', display:'flex', gap:'10px'}}>
+                <button className="btn-user" onClick={async () => {
+                  await sheetCall(editingRoom.isNew ? 'POST':'PATCH', 'rooms', editingRoom, 'id', editingRoom.id);
+                  setEditingRoom(null); fetchData();
+                }}>Simpan</button>
+                <button className="btn-back" onClick={() => setEditingRoom(null)}>Batal</button>
+              </div>
+            </div>
           </div>
         )}
       </main>
